@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint PHP
+        run: |
+          set -euo pipefail
+          find src -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l bin/keycheat
+
+      - name: Smoke test render
+        run: |
+          set -euo pipefail
+          php bin/keycheat render --in prototype/keybindings.json --out build/cheatsheet.html
+          count=$(grep -o 'class="binding"' build/cheatsheet.html | wc -l)
+          echo "rendered bindings: ${count}"
+          test "${count}" -eq 47
