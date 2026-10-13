@@ -1,0 +1,20 @@
+{
+  "name": "viktor-v/keycheat",
+  "description": "One cheat sheet for every keybinding, collected from your chezmoi-managed dotfiles.",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Keycheat\\": "src/Keycheat/"
+    }
+  },
+  "bin": [
+    "bin/keycheat"
+  ],
+  "scripts": {
+    "render": "php bin/keycheat render"
+  }
+}

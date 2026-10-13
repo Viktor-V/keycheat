@@ -1,0 +1,84 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Dependencies are not installed. Run: composer install\n");
+    exit(1);
+}
+require $autoload;
+
+use Keycheat\HtmlRenderer;
+
+$args = array_slice($argv ?? [], 1);
+$command = $args[0] ?? 'help';
+
+$opts = [];
+for ($i = 1; $i < count($args); $i++) {
+    $a = $args[$i];
+    if (!str_starts_with($a, '--')) {
+        continue;
+    }
+    $name = substr($a, 2);
+    if (str_contains($name, '=')) {
+        [$k, $v] = explode('=', $name, 2);
+        $opts[$k] = $v;
+    } else {
+        $opts[$name] = $args[$i + 1] ?? true;
+        $i++;
+    }
+}
+
+switch ($command) {
+    case 'render':
+        $in = (string)($opts['in'] ?? 'keybindings.json');
+        $out = (string)($opts['out'] ?? 'build/cheatsheet.html');
+
+        if (!is_file($in)) {
+            fwrite(STDERR, "input not found: {$in}\n");
+            exit(1);
+        }
+
+        try {
+            $data = json_decode((string)file_get_contents($in), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            fwrite(STDERR, "invalid JSON in {$in}: {$e->getMessage()}\n");
+            exit(1);
+        }
+
+        if (!is_array($data) || !isset($data['sources']) || !is_array($data['sources'])) {
+            fwrite(STDERR, "invalid keybindings data: missing 'sources' array\n");
+            exit(1);
+        }
+
+        $html = (new HtmlRenderer())->render($data);
+
+        $dir = dirname($out);
+        if ($dir !== '' && $dir !== '.' && !is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        file_put_contents($out, $html);
+
+        $count = 0;
+        foreach ($data['sources'] as $s) {
+            $count += count($s['bindings'] ?? []);
+        }
+        fwrite(STDOUT, "wrote {$out} ({$count} bindings from " . count($data['sources']) . " sources)\n");
+        break;
+
+    case 'help':
+    default:
+        fwrite(STDOUT, <<<TXT
+        keycheat — one cheat sheet for all your keybindings
+
+        Usage:
+          keycheat render [--in FILE] [--out FILE]
+
+        Options:
+          --in   input normalized JSON   (default: keybindings.json)
+          --out  output HTML file        (default: build/cheatsheet.html)
+
+        TXT);
+        break;
+}

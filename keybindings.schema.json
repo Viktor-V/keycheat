@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Viktor-V/keycheat/keybindings.schema.json",
+  "title": "keycheat normalized keybindings",
+  "description": "Portable, presentation-agnostic model produced by keycheat adapters and consumed by renderers.",
+  "type": "object",
+  "required": ["sources"],
+  "properties": {
+    "generated_at": { "type": "string", "description": "ISO-8601 timestamp" },
+    "generator": { "type": "string", "description": "What produced this file" },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["id", "name", "bindings"],
+      "properties": {
+        "id": { "type": "string", "description": "Stable slug, e.g. wezterm" },
+        "name": { "type": "string", "description": "Human name, e.g. WezTerm" },
+        "extraction": { "enum": ["static", "runtime"], "description": "How bindings were obtained" },
+        "sample": { "type": "boolean", "default": false, "description": "Placeholder data, not from a real config" },
+        "bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/binding" }
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "required": ["keys", "description"],
+      "properties": {
+        "keys": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Sequence of chords. Each chord joins its keys with '+', e.g. ['Ctrl+Space', 'C']."
+        },
+        "description": { "type": "string", "description": "Human-readable summary" },
+        "action": { "type": "string", "description": "Raw command/action from the source config" },
+        "context": { "type": "string", "description": "Scope or mode, e.g. global, normal, visual" }
+      }
+    }
+  }
+}
