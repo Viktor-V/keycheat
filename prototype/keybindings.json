@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-10-13T00:00:00Z",
+  "generator": "keycheat prototype (hand-written from real configs)",
+  "sources": [
+    {
+      "id": "wezterm",
+      "name": "WezTerm",
+      "extraction": "runtime",
+      "sample": false,
+      "bindings": [
+        { "keys": ["Ctrl+Space", "C"], "action": "SpawnTab CurrentPaneDomain", "description": "New tab" },
+        { "keys": ["Ctrl+Space", "X"], "action": "CloseCurrentTab", "description": "Close current tab" },
+        { "keys": ["Ctrl+Space", "B"], "action": "ActivateTabRelative -1", "description": "Previous tab" },
+        { "keys": ["Ctrl+Space", "N"], "action": "ActivateTabRelative 1", "description": "Next tab" },
+        { "keys": ["Ctrl+Space", "W"], "action": "ShowLauncherArgs FUZZY|WORKSPACES", "description": "Workspace / fuzzy launcher" },
+        { "keys": ["Ctrl+Space", "\\"], "action": "SplitHorizontal", "description": "Split horizontally" },
+        { "keys": ["Ctrl+Space", "-"], "action": "SplitVertical", "description": "Split vertically" },
+        { "keys": ["Ctrl+Space", "H"], "action": "ActivatePaneDirection Left", "description": "Focus pane left" },
+        { "keys": ["Ctrl+Space", "J"], "action": "ActivatePaneDirection Down", "description": "Focus pane down" },
+        { "keys": ["Ctrl+Space", "K"], "action": "ActivatePaneDirection Up", "description": "Focus pane up" },
+        { "keys": ["Ctrl+Space", "L"], "action": "ActivatePaneDirection Right", "description": "Focus pane right" },
+        { "keys": ["Ctrl+Space", "\u2190"], "action": "AdjustPaneSize Left 5", "description": "Resize pane left" },
+        { "keys": ["Ctrl+Space", "\u2192"], "action": "AdjustPaneSize Right 5", "description": "Resize pane right" },
+        { "keys": ["Ctrl+Space", "\u2193"], "action": "AdjustPaneSize Down 5", "description": "Resize pane down" },
+        { "keys": ["Ctrl+Space", "\u2191"], "action": "AdjustPaneSize Up 5", "description": "Resize pane up" },
+        { "keys": ["Ctrl+Space", "1..9"], "action": "ActivateTab n-1", "description": "Activate tab 1\u20139" },
+        { "keys": ["Ctrl+Space", "0"], "action": "ActivateTab 9", "description": "Activate tab 10" }
+      ]
+    },
+    {
+      "id": "flow-launcher",
+      "name": "Flow Launcher",
+      "extraction": "static",
+      "sample": false,
+      "bindings": [
+        { "keys": ["Alt+Space"], "action": "Hotkey", "description": "Open / hide Flow Launcher" },
+        { "keys": ["F1"], "action": "PreviewHotkey", "description": "Preview result" },
+        { "keys": ["Ctrl+Tab"], "action": "AutoCompleteHotkey", "description": "Autocomplete query" },
+        { "keys": ["Tab"], "action": "SelectNextItemHotkey", "description": "Select next item" },
+        { "keys": ["Shift+Tab"], "action": "SelectPrevItemHotkey", "description": "Select previous item" },
+        { "keys": ["PageUp"], "action": "SelectNextPageHotkey", "description": "Next page of results" },
+        { "keys": ["PageDown"], "action": "SelectPrevPageHotkey", "description": "Previous page of results" },
+        { "keys": ["Ctrl+O"], "action": "OpenContextMenuHotkey", "description": "Open context menu" },
+        { "keys": ["Ctrl+I"], "action": "SettingWindowHotkey", "description": "Open settings" },
+        { "keys": ["Ctrl+H"], "action": "OpenHistoryHotkey", "description": "Open history" },
+        { "keys": ["Alt+Up"], "action": "CycleHistoryUpHotkey", "description": "Cycle history up" },
+        { "keys": ["Alt+Down"], "action": "CycleHistoryDownHotkey", "description": "Cycle history down" },
+        { "keys": ["Alt+G"], "action": "DialogJumpHotkey", "description": "Dialog jump" }
+      ]
+    },
+    {
+      "id": "glazewm",
+      "name": "GlazeWM",
+      "extraction": "static",
+      "sample": true,
+      "bindings": [
+        { "keys": ["Alt+Shift+Q"], "action": "wm-exit", "description": "Quit GlazeWM" },
+        { "keys": ["Alt+Shift+R"], "action": "wm-reload-config", "description": "Reload configuration" },
+        { "keys": ["Alt+H"], "action": "focus left", "description": "Focus window left" },
+        { "keys": ["Alt+J"], "action": "focus down", "description": "Focus window down" },
+        { "keys": ["Alt+K"], "action": "focus up", "description": "Focus window up" },
+        { "keys": ["Alt+L"], "action": "focus right", "description": "Focus window right" },
+        { "keys": ["Alt+Shift+H"], "action": "resize left", "description": "Resize window left" },
+        { "keys": ["Alt+Shift+J"], "action": "resize down", "description": "Resize window down" },
+        { "keys": ["Alt+Shift+K"], "action": "resize up", "description": "Resize window up" },
+        { "keys": ["Alt+Shift+L"], "action": "resize right", "description": "Resize window right" },
+        { "keys": ["Alt+1..9"], "action": "focus workspace n", "description": "Focus workspace 1\u20139" },
+        { "keys": ["Alt+Shift+1..9"], "action": "move to workspace n", "description": "Move window to workspace 1\u20139" }
+      ]
+    },
+    {
+      "id": "neovim",
+      "name": "Neovim",
+      "extraction": "runtime",
+      "sample": true,
+      "bindings": [
+        { "keys": ["Space", "F", "F"], "action": "telescope find_files", "description": "Find files" },
+        { "keys": ["Space", "F", "G"], "action": "telescope live_grep", "description": "Live grep" },
+        { "keys": ["Space", "E"], "action": "nvim-tree toggle", "description": "Toggle file explorer" },
+        { "keys": ["G", "D"], "action": "vim.lsp.buf.definition", "description": "Go to definition" },
+        { "keys": ["Space", "W"], "action": "write", "description": "Save file" }
+      ]
+    }
+  ]
+}
