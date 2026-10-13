@@ -38,6 +38,9 @@ jobs:
           find src -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l bin/keycheat
 
+      - name: Validate model
+        run: php bin/keycheat validate --in prototype/keybindings.json
+
       - name: Smoke test render
         run: |
           set -euo pipefail

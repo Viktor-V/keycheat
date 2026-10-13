@@ -10,6 +10,9 @@ if (!is_file($autoload)) {
 require $autoload;
 
 use Keycheat\HtmlRenderer;
+use Keycheat\Validator;
+
+$root = dirname(__DIR__);
 
 $args = array_slice($argv ?? [], 1);
 $command = $args[0] ?? 'help';
@@ -30,18 +33,48 @@ for ($i = 1; $i < count($args); $i++) {
     }
 }
 
-switch ($command) {
-    case 'render':
-        $in = (string)($opts['in'] ?? 'keybindings.json');
-        $out = (string)($opts['out'] ?? 'build/cheatsheet.html');
+if (!in_array($command, ['render', 'validate'], true)) {
+    fwrite(STDOUT, <<<TXT
+    keycheat — one cheat sheet for all your keybindings
 
-        if (!is_file($in)) {
-            fwrite(STDERR, "input not found: {$in}\n");
+    Usage:
+      keycheat render   [--in FILE] [--out FILE]
+      keycheat validate [--in FILE]
+
+    Options:
+      --in   input normalized JSON   (default: keybindings.json)
+      --out  output HTML file        (default: build/cheatsheet.html)
+
+    TXT);
+    exit(0);
+}
+
+$in = (string)($opts['in'] ?? 'keybindings.json');
+if (!is_file($in)) {
+    fwrite(STDERR, "input not found: {$in}\n");
+    exit(1);
+}
+
+$json = (string)file_get_contents($in);
+
+switch ($command) {
+    case 'validate':
+        $errors = (new Validator($root . '/keybindings.schema.json'))->validate($json);
+        if ($errors !== []) {
+            fwrite(STDERR, "{$in}: INVALID\n");
+            foreach ($errors as $error) {
+                fwrite(STDERR, "  - {$error}\n");
+            }
             exit(1);
         }
+        fwrite(STDOUT, "{$in}: valid\n");
+        break;
+
+    case 'render':
+        $out = (string)($opts['out'] ?? 'build/cheatsheet.html');
 
         try {
-            $data = json_decode((string)file_get_contents($in), true, 512, JSON_THROW_ON_ERROR);
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             fwrite(STDERR, "invalid JSON in {$in}: {$e->getMessage()}\n");
             exit(1);
@@ -65,20 +98,5 @@ switch ($command) {
             $count += count($s['bindings'] ?? []);
         }
         fwrite(STDOUT, "wrote {$out} ({$count} bindings from " . count($data['sources']) . " sources)\n");
-        break;
-
-    case 'help':
-    default:
-        fwrite(STDOUT, <<<TXT
-        keycheat — one cheat sheet for all your keybindings
-
-        Usage:
-          keycheat render [--in FILE] [--out FILE]
-
-        Options:
-          --in   input normalized JSON   (default: keybindings.json)
-          --out  output HTML file        (default: build/cheatsheet.html)
-
-        TXT);
         break;
 }
