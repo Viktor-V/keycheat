@@ -9,10 +9,13 @@ if (!is_file($autoload)) {
 }
 require $autoload;
 
+use Keycheat\Adapter\Adapters;
+use Keycheat\ConfigResolver;
 use Keycheat\HtmlRenderer;
 use Keycheat\Validator;
 
 $root = dirname(__DIR__);
+$schemaPath = $root . '/keybindings.schema.json';
 
 $args = array_slice($argv ?? [], 1);
 $command = $args[0] ?? 'help';
@@ -27,39 +30,121 @@ for ($i = 1; $i < count($args); $i++) {
     if (str_contains($name, '=')) {
         [$k, $v] = explode('=', $name, 2);
         $opts[$k] = $v;
-    } else {
-        $opts[$name] = $args[$i + 1] ?? true;
+        continue;
+    }
+    $next = $args[$i + 1] ?? null;
+    if ($next !== null && !str_starts_with((string)$next, '--')) {
+        $opts[$name] = $next;
         $i++;
+    } else {
+        $opts[$name] = true;
     }
 }
 
-if (!in_array($command, ['render', 'validate'], true)) {
+$write = static function (string $path, string $content): void {
+    $dir = dirname($path);
+    if ($dir !== '' && $dir !== '.' && !is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+    file_put_contents($path, $content);
+};
+
+$countBindings = static function (array $sources): int {
+    $total = 0;
+    foreach ($sources as $source) {
+        $total += count($source['bindings'] ?? []);
+    }
+
+    return $total;
+};
+
+if (!in_array($command, ['parse', 'render', 'validate'], true)) {
     fwrite(STDOUT, <<<TXT
     keycheat — one cheat sheet for all your keybindings
 
     Usage:
+      keycheat parse    [--out FILE] [--render] [--out-html FILE]
       keycheat render   [--in FILE] [--out FILE]
       keycheat validate [--in FILE]
 
     Options:
-      --in   input normalized JSON   (default: keybindings.json)
-      --out  output HTML file        (default: build/cheatsheet.html)
+      --in        input normalized JSON   (default: keybindings.json)
+      --out       output file             (parse: build/keybindings.json, render: build/cheatsheet.html)
+      --render    after parse, also render the HTML cheat sheet
+      --out-html  HTML output for --render (default: build/cheatsheet.html)
 
     TXT);
     exit(0);
 }
 
-$in = (string)($opts['in'] ?? 'keybindings.json');
-if (!is_file($in)) {
-    fwrite(STDERR, "input not found: {$in}\n");
-    exit(1);
-}
-
-$json = (string)file_get_contents($in);
-
 switch ($command) {
+    case 'parse':
+        $out = (string)($opts['out'] ?? 'build/keybindings.json');
+
+        $resolver = new ConfigResolver();
+        $sources = [];
+        foreach (Adapters::all() as $adapter) {
+            $content = $resolver->read($adapter->target());
+            if ($content === null) {
+                fwrite(STDERR, "skip {$adapter->id()}: no config found\n");
+                continue;
+            }
+
+            try {
+                $bindings = $adapter->extract($content);
+            } catch (\Throwable $e) {
+                fwrite(STDERR, "error in {$adapter->id()}: {$e->getMessage()}\n");
+                exit(1);
+            }
+
+            $sources[] = [
+                'id' => $adapter->id(),
+                'name' => $adapter->name(),
+                'extraction' => $adapter->extraction(),
+                'bindings' => $bindings,
+            ];
+        }
+
+        $model = [
+            'generated_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s\Z'),
+            'generator' => 'keycheat',
+            'sources' => $sources,
+        ];
+
+        $json = json_encode($model, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            fwrite(STDERR, 'failed to encode model: ' . json_last_error_msg() . "\n");
+            exit(1);
+        }
+        $json .= "\n";
+
+        $errors = (new Validator($schemaPath))->validate($json);
+        if ($errors !== []) {
+            fwrite(STDERR, "parse produced an invalid model:\n");
+            foreach ($errors as $error) {
+                fwrite(STDERR, "  - {$error}\n");
+            }
+            exit(1);
+        }
+
+        $write($out, $json);
+        fwrite(STDOUT, "wrote {$out} ({$countBindings($sources)} bindings from " . count($sources) . " sources)\n");
+
+        if (array_key_exists('render', $opts)) {
+            $outHtml = (string)($opts['out-html'] ?? 'build/cheatsheet.html');
+            $write($outHtml, (new HtmlRenderer())->render($model));
+            fwrite(STDOUT, "wrote {$outHtml}\n");
+        }
+        break;
+
     case 'validate':
-        $errors = (new Validator($root . '/keybindings.schema.json'))->validate($json);
+        $in = (string)($opts['in'] ?? 'keybindings.json');
+        if (!is_file($in)) {
+            fwrite(STDERR, "input not found: {$in}\n");
+            exit(1);
+        }
+
+        $errors = (new Validator($schemaPath))->validate((string)file_get_contents($in));
         if ($errors !== []) {
             fwrite(STDERR, "{$in}: INVALID\n");
             foreach ($errors as $error) {
@@ -71,10 +156,16 @@ switch ($command) {
         break;
 
     case 'render':
+        $in = (string)($opts['in'] ?? 'keybindings.json');
         $out = (string)($opts['out'] ?? 'build/cheatsheet.html');
 
+        if (!is_file($in)) {
+            fwrite(STDERR, "input not found: {$in}\n");
+            exit(1);
+        }
+
         try {
-            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            $data = json_decode((string)file_get_contents($in), true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             fwrite(STDERR, "invalid JSON in {$in}: {$e->getMessage()}\n");
             exit(1);
@@ -85,18 +176,7 @@ switch ($command) {
             exit(1);
         }
 
-        $html = (new HtmlRenderer())->render($data);
-
-        $dir = dirname($out);
-        if ($dir !== '' && $dir !== '.' && !is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-        file_put_contents($out, $html);
-
-        $count = 0;
-        foreach ($data['sources'] as $s) {
-            $count += count($s['bindings'] ?? []);
-        }
-        fwrite(STDOUT, "wrote {$out} ({$count} bindings from " . count($data['sources']) . " sources)\n");
+        $write($out, (new HtmlRenderer())->render($data));
+        fwrite(STDOUT, "wrote {$out} ({$countBindings($data['sources'])} bindings from " . count($data['sources']) . " sources)\n");
         break;
 }
