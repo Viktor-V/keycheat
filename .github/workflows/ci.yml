@@ -41,6 +41,9 @@ jobs:
       - name: Validate model
         run: php bin/keycheat validate --in prototype/keybindings.json
 
+      - name: Run tests
+        run: vendor/bin/phpunit
+
       - name: Smoke test render
         run: |
           set -euo pipefail

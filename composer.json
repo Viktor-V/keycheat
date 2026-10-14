@@ -12,10 +12,19 @@
       "Keycheat\\": "src/Keycheat/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Keycheat\\Tests\\": "tests/"
+    }
+  },
   "bin": [
     "bin/keycheat"
   ],
   "scripts": {
-    "render": "php bin/keycheat render"
+    "render": "php bin/keycheat render",
+    "test": "phpunit"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.4"
   }
 }
